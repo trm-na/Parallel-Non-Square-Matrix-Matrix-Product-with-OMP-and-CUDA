@@ -1,0 +1,49 @@
+#!/bin/bash
+
+##
+## PBS submission script used to run a OpenMP correctness test on 
+## Cranfield University's CR2 HPC system.
+##
+## Adapted from the MPI PBS submission template provided by
+## Cranfield University.
+##
+## This script is environment-specific. PBS resource requests, queue
+## names, compiler settings and executable paths may need to be changed
+## before running it on another HPC system.
+##
+
+
+#PBS -N trm_omp_correctness
+#PBS -l select=1:ncpus=16:mpiprocs=1
+#PBS -q three_hour
+
+## Email notifications are disabled in the public version.
+#PBS -m n
+
+#PBS -j oe
+#PBS -W sandbox=PRIVATE
+#PBS -k n
+
+## Create a symbolic link to the job's private sandbox.
+ln -s $PWD $PBS_O_WORKDIR/$PBS_JOBID
+
+## Change to the directory from which the job was submitted.
+cd $PBS_O_WORKDIR
+
+## Calculate the number of CPUs allocated to the job.
+export cpus=`cat $PBS_NODEFILE | wc -l`
+
+## Ensure that the output directory exists.
+mkdir -p ./Results/Correctness
+
+## Initialise output files.
+echo "" > ./Results/Correctness/matrix_mult_OMP_row_correctness.txt
+echo "" > ./Results/Correctness/matrix_mult_OMP_col_correctness.txt
+
+## Run the OMP correctness test.
+export OMP_NUM_THREADS=1
+./matrix_mult_omp 10 5 1 0 0 >> ./Results/Correctness/matrix_mult_OMP_row_correctness.txt
+./matrix_mult_omp 10 5 1 1 0 >> ./Results/Correctness/matrix_mult_OMP_col_correctness.txt
+
+## Remove the symbolic link created for the private job sandbox.
+/bin/rm -f ./$PBS_JOBID

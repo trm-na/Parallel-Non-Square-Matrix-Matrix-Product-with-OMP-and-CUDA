@@ -1,0 +1,59 @@
+#!/bin/bash
+
+##
+## PBS submission script used to run a CUDA correctness test on 
+## Cranfield University's CR2 HPC system.
+##
+## Adapted from the GPU PBS submission template provided by
+## Cranfield University.
+##
+## This script is environment-specific. PBS resource requests, queue
+## names, module paths, compiler versions, CUDA versions and executable
+## paths may need to be changed before running it on another HPC system.
+##
+
+#PBS -N trm_cuda_correctness
+#PBS -l select=1:ncpus=1:mpiprocs=1:ngpus=1
+#PBS -q gpu_V100
+#PBS -l walltime=1:00:00
+
+## Email notifications are disabled in the public version.
+#PBS -m n
+
+#PBS -j oe
+#PBS -v "CUDA_VISIBLE_DEVICES="
+#PBS -W sandbox=PRIVATE
+#PBS -V
+#PBS -k n
+
+## Create a symbolic link to the job's private sandbox.
+ln -s $PWD $PBS_O_WORKDIR/$PBS_JOBID
+
+## Change to the directory from which the job was submitted.
+cd $PBS_O_WORKDIR
+
+## Display the GPU allocated to the job.
+echo CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES
+
+## Calculate the number of CPUs and GPUs allocated to the job.
+cpus=`cat $PBS_NODEFILE | wc -l`
+gpus=`echo $CUDA_VISIBLE_DEVICES|awk -F"," '{print NF}'`
+
+## Load the compiler, CUDA and CMake environments used on CR2.
+module use /apps/modules/all
+module load GCC/11.3.0 CUDA/11.7.0 CMake/3.24.3-GCCcore-11.3.0
+
+
+## Ensure that the output directory exists.
+mkdir -p ./Results/Correctness
+
+## Initialise output files.
+echo "" > ./Results/Correctness/matrix_mult_CUDA_row_correctness.txt
+echo "" > ./Results/Correctness/matrix_mult_CUDA_col_correctness.txt
+
+## Run the CUDA correctness test.
+./matrix_mult_cuda 10 5 0 0 >> ./Results/Correctness/matrix_mult_CUDA_row_correctness.txt
+./matrix_mult_cuda 10 5 1 0 >> ./Results/Correctness/matrix_mult_CUDA_col_correctness.txt
+
+## Remove the symbolic link created for the private job sandbox.
+/bin/rm -f $PBS_JOBID

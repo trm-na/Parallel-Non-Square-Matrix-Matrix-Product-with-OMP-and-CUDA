@@ -1,0 +1,63 @@
+#!/bin/bash
+
+##
+## PBS submission script used to run OpenMP performance benchmarks on 
+## Cranfield University's CR2 HPC system.
+##
+## Adapted from the MPI PBS submission template provided by
+## Cranfield University.
+##
+## This script is environment-specific. PBS resource requests, queue
+## names, compiler settings and executable paths may need to be changed
+## before running it on another HPC system.
+##
+
+
+#PBS -N trm_omp_float
+#PBS -l select=1:ncpus=16:mpiprocs=1
+#PBS -q three_hour
+
+## Email notifications are disabled in the public version.
+#PBS -m n
+
+#PBS -j oe
+#PBS -W sandbox=PRIVATE
+#PBS -k n
+
+## Create a symbolic link to the job's private sandbox.
+ln -s $PWD $PBS_O_WORKDIR/$PBS_JOBID
+
+## Change to the directory from which the job was submitted.
+cd $PBS_O_WORKDIR
+
+## Calculate the number of CPUs allocated to the job.
+export cpus=`cat $PBS_NODEFILE | wc -l`
+
+## Ensure that the output directories exist.
+mkdir -p ./Results/Float
+mkdir -p ./Results/Double
+
+## Initialise output files.
+echo "" > ./Results/Float/matrix_mult_OMP_row.txt
+echo "N,K,nthreads,serial_time,serial_MFLOPS,parallel_time,parallel_MFLOPS,max_diff" > ./Results/Float/matrix_mult_OMP_row.csv
+echo "" > ./Results/Float/matrix_mult_OMP_col.txt
+echo "N,K,nthreads,serial_time,serial_MFLOPS,parallel_time,parallel_MFLOPS,max_diff" > ./Results/Float/matrix_mult_OMP_col.csv
+
+## Run the OMP benchmarks
+for t in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
+do
+    export OMP_NUM_THREADS=$t
+    for n in 512 1024 2048 4096 8192
+    do
+        for k in 2 4 8 16 32 48 64 96 128
+        do
+            ./matrix_mult_omp $n $k $t 0 0 >> ./Results/Float/matrix_mult_OMP_row.txt
+            ./matrix_mult_omp $n $k $t 0 1 >> ./Results/Float/matrix_mult_OMP_row.csv
+            ./matrix_mult_omp $n $k $t 1 0 >> ./Results/Float/matrix_mult_OMP_col.txt
+            ./matrix_mult_omp $n $k $t 1 1 >> ./Results/Float/matrix_mult_OMP_col.csv
+        done
+    done
+done
+
+## Remove the symbolic link created for the private job sandbox.
+/bin/rm -f ./$PBS_JOBID
