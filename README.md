@@ -1,4 +1,4 @@
-# Intel MPI Parallel Sparse-Matrix Fat-Vector Multiplication
+# Parallel Non-Square Matrix-Matrix Product with OMP and CUDA
 
 This repository includes the code to parallelise a non-square matrix-matrix multiplication using a shared memory architecture. The parallelisation will be performed in a CPU, using up to 16 cores, and a GPU to test which parallelisation method is more efficient. To do so, OpenMP and NVIDIA CUDA will be used respectively.
 
@@ -10,6 +10,7 @@ First, the problem was approached serially.
 
 The serial solution for this problem is the regular matrix multiplication algorithm: the i<sup>th</sup> row of matrix A is multiplied by the j<sup>th</sup> column of matrix B, and the result of that multiplication will be the element C<sub>i,j</sub> of the solution matrix C.
 
+<img width="1181" height="255" alt="image" src="https://github.com/user-attachments/assets/1d142da9-94d3-4267-9374-cdc71e8abc95" />
 
 The previous image shows how the serial algorithm works to obtain the first element of the solution matrix, where $C_{1,1} = A_{1,1} \cdot B_{1,1} + A_{1,2} \cdot B_{2,1} + A_{1,3} \cdot B_{3,1}$. This serial algorithm would go on, first computing all the elements from the first row of the solution matrix and then continuing in the same way for the subsequent rows. Additionally, as it is a serial algorithm, all the computation would be done by the same CPU thread.
 
@@ -19,7 +20,7 @@ Once the serial algorithm was determined, its parallelisation was designed. Even
 
 As with OpenMP the number of threads can be obtained, the parallelisation algorithm was designed to balance the load, having each thread processing a block of rows from C to obtain the result.
 
-
+<img width="1181" height="734" alt="image" src="https://github.com/user-attachments/assets/39e6cf41-0d26-43d7-83da-38e54fa47ae4" />
 
 The previous image depicts how the CPU parallel algorithm would work with 3 threads and the example matrices. Thread 1 has rows 1 and 2 assigned, thread 2 has row 3 and thread 3 has row 4. Each one of the threads accesses the shared memory to get and multiply the elements they need to compute the results they are assigned to obtain. In this case, each thread must access one (or two) rows from A and the entirety of B.
 
@@ -29,7 +30,7 @@ With the real dimensions, to balance the load, each thread processes N/nthreads 
 
 With CUDA, the parallelisation works differently. Instead of having a set number of threads, the threads act according to a block on the matrix to process.
 
-
+<img width="1181" height="558" alt="image" src="https://github.com/user-attachments/assets/e70aa10f-1d59-49dd-b4fe-3921c16f3b2f" />
 
 The previous image shows how the GPU parallel algorithm would work with three random elements from matrix C. Each thread first determines its location in matrix C. Depending on its location, the thread will access the needed data from memory to compute the corresponding result. The threads multiply their corresponding row from A by their corresponding column from B and obtain the result for their location.
 
@@ -57,11 +58,12 @@ To execute the code in CR2, first upload the CUDA and OMP directories. After tha
 To compile the CUDA files, execute `wget https://github.com/NVIDIA/cuda-samples/archive/v11.6.tar.gz` and `tar xzf v11.6.tar.gz`. Once the files are uncompressed, edit the uncompressed file `CMakeLists.txt` and add `add_subdirectory(CUDA)`. After that, execute `cmake .`, change the directory to `CUDA` and execute `make matrix_mult_cuda`.
 
 To compile the OpenMP files, change the directory to `OMP` and `execute gcc -fopenmp -O4 -o matrix_mult_omp matrix_mult_omp.c -lm`.
-Once all the files are compiled, execute `qsub submission_file.sub`, where `submission_file.sub` is any of the submission files provided. These are the regular ones, to perform the tests presented in the report, and the correctness ones, used to print the matrices for a small correctness test when the correctness section is uncommented on the source code files.
+Once all the files are compiled, execute `qsub submission_file.sub`, where `submission_file.sub` is any of the submission files provided. These are the regular ones, to perform the benchmark tests, and the correctness ones, used to print the matrices for a small correctness test when the correctness section is uncommented on the source code files.
 
 ## Acknowledgements
 
 The skeleton of the OMP source code was developed by Salvatore Filippone.
+
 The skeleton of the CUDA source code was developed by Michał Czapiński in 2014.
 
 <hr>
